@@ -10,7 +10,6 @@ import org.springaicommunity.agent.tools.SkillsTool;
 import org.springaicommunity.agent.tools.SmartWebFetchTool;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -34,11 +33,10 @@ public class Application {
 			ChatClient chatClient = chatClientBuilder // @formatter:off
 				.defaultSystem("Always use the available skills to assist the user in their requests.")
 
-				// Skills tool
-				.defaultToolCallbacks(SkillsTool.builder().addSkillsResources(agentSkillsDirs).build())
-
-				// Built-in tools
 				.defaultTools(
+					// Skills tool
+					SkillsTool.builder().addSkillsResources(agentSkillsDirs).build(),
+
 					//Bash execution tool
 					ShellTools.builder().build(),// built-in shell tools
 					// Read, Write and Edit files tool
@@ -51,8 +49,6 @@ public class Application {
 				
 				
 				.defaultAdvisors(
-					// Tool Calling advisor
-					ToolCallAdvisor.builder().build(),
 					// Custom logging advisor
 					MyLoggingAdvisor.builder()
 						.showAvailableTools(false)
@@ -63,11 +59,11 @@ public class Application {
 
 			var answer = chatClient
 				.prompt("""
-					Explain reinforcement learning in simple terms and use.
-					Use required skills.
-					Then use the Youtube video https://youtu.be/vXtfdGphr3c?si=xy8U2Al_Um5vE4Jd transcript to support your answer.
-					Use absolute paths for the skills and scripts. Do not ask me for more details.
-					""")
+						Explain reinforcement learning in simple terms and use.
+						Use required skills.
+						Then use the Youtube video https://youtu.be/vXtfdGphr3c?si=xy8U2Al_Um5vE4Jd transcript to support your answer.
+						Use absolute paths for the skills and scripts. Do not ask me for more details.
+						""")
 				.call()
 				.content();
 

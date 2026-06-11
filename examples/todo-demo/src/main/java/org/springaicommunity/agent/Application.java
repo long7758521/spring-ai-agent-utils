@@ -11,7 +11,7 @@ import org.springaicommunity.agent.utils.AgentEnvironment;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
-import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
@@ -21,6 +21,7 @@ import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.Ordered;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
@@ -55,15 +56,16 @@ public class Application {
 					// Publish todo update events
 					.todoEventHandler(event ->
 						applicationEventPublisher.publishEvent(new TodoUpdateEvent(this, event.todos())))
-					.build())	
-
-				// Internet search tool
-				.defaultTools(BraveWebSearchTool.builder(braveApiKey).resultCount(15).build())
+					.build(),
+					
+					// Internet search tool
+					BraveWebSearchTool.builder(braveApiKey).resultCount(15).build()
+				)	
 
 				// Advisors
 				.defaultAdvisors(
-					ToolCallAdvisor.builder().disableInternalConversationHistory().build(),
-					MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder().maxMessages(500).build()) .build())
+					MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder().maxMessages(500).build())
+					.order(Ordered.HIGHEST_PRECEDENCE + 1000).build())
 				.build();
 				// @formatter:on
 
@@ -73,7 +75,10 @@ public class Application {
 			try (Scanner scanner = new Scanner(System.in)) {
 				while (true) {
 					System.out.print("\n> USER: ");
-					System.out.println("\n> ASSISTANT: " + chatClient.prompt(scanner.nextLine()).call().content());
+					System.out.println("\n> ASSISTANT: " + chatClient.prompt(scanner.nextLine())
+						.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "session-1"))
+						.call()
+						.content());
 				}
 			}
 		};

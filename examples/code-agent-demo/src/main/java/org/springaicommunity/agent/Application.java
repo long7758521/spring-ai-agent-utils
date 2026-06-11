@@ -16,7 +16,8 @@ import org.springaicommunity.agent.utils.CommandLineQuestionHandler;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
-import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.beans.factory.annotation.Value;
@@ -52,10 +53,10 @@ public class Application {
 					.param(AgentEnvironment.AGENT_MODEL_KNOWLEDGE_CUTOFF_KEY, agentModelKnowledgeCutoff))
 
 				// AirBnb MCP Tools
-				.defaultToolCallbacks(mcpToolCallbackProvider)
+				.defaultTools(mcpToolCallbackProvider)
 
 				// Skills tool
-				.defaultToolCallbacks(SkillsTool.builder().addSkillsResources(skillPaths).build())
+				.defaultTools(SkillsTool.builder().addSkillsResources(skillPaths).build())
 
 				// Todo management tool
 				.defaultTools(TodoWriteTool.builder().build())
@@ -76,9 +77,6 @@ public class Application {
 
 				// Advisors
 				.defaultAdvisors(
-					ToolCallAdvisor.builder()
-						.conversationHistoryEnabled(false)
-						.build(), // tool calling advisor
 					MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder().maxMessages(500).build())
 						.order(Ordered.HIGHEST_PRECEDENCE + 1000)
 						.build())
@@ -86,7 +84,7 @@ public class Application {
 					// MyLoggingAdvisor.builder()
 					// 	.showAvailableTools(false)
 					// 	.showSystemMessage(false)
-					// 	.build()) 
+					// 	.build())
 				.build();
 				// @formatter:on
 
@@ -96,9 +94,13 @@ public class Application {
 			try (Scanner scanner = new Scanner(System.in)) {
 				while (true) {
 					System.out.print("\n> USER: ");
-					System.out.println("\n> ASSISTANT: " + chatClient.prompt(scanner.nextLine()).call().content());
+					System.out.println("\n> ASSISTANT: " + chatClient.prompt(scanner.nextLine())
+						.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "session-1"))
+						.call()
+						.content());
 				}
 			}
 		};
 	}
+
 }

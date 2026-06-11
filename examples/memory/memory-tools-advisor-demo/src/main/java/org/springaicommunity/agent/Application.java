@@ -9,13 +9,15 @@ import org.springaicommunity.agent.utils.AgentEnvironment;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
-import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
+import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.Ordered;
 import org.springframework.core.io.Resource;
 
 @SpringBootApplication
@@ -34,9 +36,12 @@ public class Application {
 			@Value("classpath:/prompt/MAIN_AGENT_SYSTEM_PROMPT_V2.md") Resource systemPrompt,
 			@Value("${agent.memory.dir}") String memoryDir) throws IOException {
 
-		return args -> {		
+		return args -> {
 
 			ChatClient chatClient = chatClientBuilder // @formatter:off
+				
+				.defaultTools(new Tools()) // workaround for https://github.com/spring-projects/spring-ai/issues/6325
+
 				// system prompt
 				.defaultSystem(p -> p.text(systemPrompt) // system prompt
 					.param(AgentEnvironment.ENVIRONMENT_INFO_KEY, AgentEnvironment.info())
@@ -62,15 +67,14 @@ public class Application {
 						})
 						.build(),
 
-					// Tool Calling advisor
-					ToolCallAdvisor.builder().disableInternalConversationHistory().build(),
-
-					MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder().maxMessages(100).build()).build(),
+					MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder().maxMessages(100).build())
+						.order(Ordered.HIGHEST_PRECEDENCE + 1000).build(),
 
 					// Custom logging advisor
 					MyLoggingAdvisor.builder()
-						.showAvailableTools(false)
+						.showAvailableTools(true)
 						.showSystemMessage(false)
+						.order(Ordered.HIGHEST_PRECEDENCE + 1100)
 						.build())
 				.build();
 				// @formatter:on
@@ -81,11 +85,22 @@ public class Application {
 			try (Scanner scanner = new Scanner(System.in)) {
 				while (true) {
 					System.out.print("\n\033[1;34mUSER>\033[0m ");
-					System.out.println(
-							"\n\033[1;34mASSISTANT>\033[0m " + chatClient.prompt(scanner.nextLine()).call().content());
+					System.out.println("\n\033[1;34mASSISTANT>\033[0m " + chatClient.prompt(scanner.nextLine())
+						.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "session-1"))
+						.call()
+						.content());
 				}
 			}
 		};
+
+	}
+
+	public static class Tools {
+
+		@Tool(description = "Echoes the input text")
+		public String gecho(String input) {
+			return "Echo: " + input;
+		}
 
 	}
 

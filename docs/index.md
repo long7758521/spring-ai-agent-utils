@@ -42,7 +42,7 @@ Use the BOM to manage versions consistently across all modules:
         <dependency>
             <groupId>org.springaicommunity</groupId>
             <artifactId>spring-ai-agent-utils-bom</artifactId>
-            <version>0.7.0</version>
+            <version>0.9.0</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
@@ -63,14 +63,14 @@ Or add the core library directly:
 <dependency>
     <groupId>org.springaicommunity</groupId>
     <artifactId>spring-ai-agent-utils</artifactId>
-    <version>0.7.0</version>
+    <version>0.9.0</version>
 </dependency>
 ```
 
 _Check the latest version:_ [![](https://img.shields.io/maven-central/v/org.springaicommunity/spring-ai-agent-utils.svg?label=Maven%20Central)](https://central.sonatype.com/artifact/org.springaicommunity/spring-ai-agent-utils)
 
 !!! note
-    You need Spring AI version `2.0.0-M4` or later.
+    You need Spring AI version `2.0.0-RC1` or later.
 
 **2. Configure your agent:**
 
@@ -102,40 +102,38 @@ public class Application {
                     .param(AgentEnvironment.AGENT_MODEL_KEY, "claude-sonnet-4-5-20250929")
                     .param(AgentEnvironment.AGENT_MODEL_KNOWLEDGE_CUTOFF_KEY, "2025-01-01"))
 
-                // Sub-Agents
-                .defaultToolCallbacks(taskTool)
-
-                // Skills
-                .defaultToolCallbacks(SkillsTool.builder()
-                    .addSkillsResources(skillPaths)
-                    .build())
-
-                // Core Tools
                 .defaultTools(
+                    // Sub-Agents
+                    taskTool,
+
+                    // Skills
+                    SkillsTool.builder().addSkillsResources(skillPaths).build(),
+
+                    // Core Tools
                     ShellTools.builder().build(),
                     FileSystemTools.builder().build(),
                     GrepTool.builder().build(),
                     GlobTool.builder().build(),
                     SmartWebFetchTool.builder(chatClientBuilder.clone().build()).build(),
-                    BraveWebSearchTool.builder(braveApiKey).build())
+                    BraveWebSearchTool.builder(braveApiKey).build(),
 
-                // Task orchestration
-                .defaultTools(TodoWriteTool.builder().build())
+                    // Task orchestration
+                    TodoWriteTool.builder().build(),
 
-                // User feedback tool (use CommandLineQuestionHandler for CLI apps)
-                .defaultTools(AskUserQuestionTool.builder()
-                    .questionHandler(new CommandLineQuestionHandler())
-                    .build())
+                    // User feedback tool (use CommandLineQuestionHandler for CLI apps)
+                    AskUserQuestionTool.builder()
+                        .questionHandler(new CommandLineQuestionHandler())
+                        .build())
 
                 // Advisors
                 .defaultAdvisors(
-                    ToolCallAdvisor.builder().conversationHistoryEnabled(false).build(),
                     MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder().maxMessages(500).build()).build())
 
                 .build();
 
             String response = chatClient
                 .prompt("Search for Spring AI documentation and summarize it")
+                .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "session-1"))
                 .call()
                 .content();
         };
@@ -147,7 +145,7 @@ public class Application {
 
 - Java 17+
 - Spring Boot 3.x / 4.x
-- Spring AI 2.0.0-M4 or later
+- Spring AI 2.0.0-RC1 or later
 - Maven 3.6+
 
 ## Building
