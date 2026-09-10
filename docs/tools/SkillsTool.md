@@ -314,6 +314,37 @@ SkillsTool.builder()
     .build();
 ```
 
+### Workspace path mapping
+
+When a skill is invoked, the tool response starts with the skill's base directory so the
+model can read additional skill files or run its scripts. By default that is the host
+path the skills were loaded from. If the agent's shell and file tools execute somewhere
+else (for example a sandbox with a bind-mounted workspace), configure a `Workspace` whose
+`display(...)` mapping translates host paths into the form the model can actually use:
+
+```java
+Workspace sandbox = new Workspace() {
+    @Override
+    public Path root() {
+        return Path.of("/hosts/volumes/session-42");
+    }
+
+    @Override
+    public String display(String hostPath) {
+        return hostPath.replace("/hosts/volumes/session-42", "/workspace");
+    }
+};
+
+SkillsTool.builder()
+    .addSkillsDirectory("/hosts/volumes/session-42/skills")
+    .workspace(sandbox)
+    .build();
+// Invoking a skill now announces: "Base directory for this skill: /workspace/skills/pdf"
+```
+
+Skills loaded from JAR/classpath resources keep their synthetic base path unchanged
+(the default `display` implementation is the identity).
+
 ### Custom Tool Description Template
 
 ```java
@@ -482,7 +513,7 @@ ChatClient chatClient = chatClientBuilder
     .defaultTools(FileSystemTools.builder().build())
 
     // Required for skills to execute scripts
-    .defaultTools(new ShellTools())
+    .defaultTools(ShellTools.builder().build())
 
     .build();
 ```
@@ -619,7 +650,7 @@ public class SkillsConfig {
                 .addSkillsDirectory("examples/.claude/skills")
                 .build())
             .defaultTools(FileSystemTools.builder().build())
-            .defaultTools(new ShellTools())
+            .defaultTools(ShellTools.builder().build())
             .defaultTools(GrepTool.builder().build())
             .build();
     }
@@ -742,7 +773,7 @@ public class SkillsConfiguration {
         return chatClientBuilder
             .defaultToolCallbacks(skillsTool)
             .defaultTools(FileSystemTools.builder().build())
-            .defaultTools(new ShellTools())
+            .defaultTools(ShellTools.builder().build())
             .build();
     }
 }
@@ -785,7 +816,7 @@ ChatClient chatClient = chatClientBuilder
 ```java
 ChatClient chatClient = chatClientBuilder
     .defaultToolCallbacks(skillsTool)
-    .defaultTools(new ShellTools())  // Add this
+    .defaultTools(ShellTools.builder().build())  // Add this
     .build();
 ```
 

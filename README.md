@@ -34,7 +34,7 @@ spring-ai-agent-utils/
     └── memory/
         ├── memory-tools-demo/           # Long-term memory with AutoMemoryTools (manual setup)
         ├── memory-filesystem-tools-demo/# Long-term memory with general FileSystemTools
-        └── memory-tools-advisor-demo/   # Long-term memory via AutoAutoMemoryToolsAdvisor
+        └── memory-tools-advisor-demo/   # Long-term memory via AutoMemoryToolsAdvisor
 ```
 
 ## Agentic Utils
@@ -62,7 +62,7 @@ These are the agent tools needed to implement any agentic behavior
 #### Long-term memory
 
 - **[AutoMemoryTools](spring-ai-agent-utils/docs/AutoMemoryTools.md)** - Persistent, file-based long-term memory that survives across conversations. Agents store typed memory files (`user`, `feedback`, `project`, `reference`) in a sandboxed directory and navigate them via a `MEMORY.md` index. Requires the companion `classpath:/prompt/AUTO_MEMORY_TOOLS_SYSTEM_PROMPT.md` system prompt (bundled in the jar) to instruct the agent on when and how to use the tools. Inspired by [Claude Code memory](https://code.claude.com/docs/en/memory) and the [Claude API SDK memory tool](https://platform.claude.com/docs/en/agents-and-tools/tool-use/memory-tool).
-- **[AutoAutoMemoryToolsAdvisor](spring-ai-agent-utils/docs/AutoAutoMemoryToolsAdvisor.md)** - A `ChatClient` advisor that wires `AutoMemoryTools` and its companion system prompt into the request pipeline automatically. Eliminates manual tool and prompt registration, deduplicates callbacks, and supports an optional `memoryConsolidationTrigger` to prompt the model to summarise and clean up memories on a schedule.
+- **[AutoMemoryToolsAdvisor](spring-ai-agent-utils/docs/AutoMemoryToolsAdvisor.md)** - A `ChatClient` advisor that wires `AutoMemoryTools` and its companion system prompt into the request pipeline automatically. Eliminates manual tool and prompt registration, deduplicates callbacks, and supports an optional `memoryConsolidationTrigger` to prompt the model to summarise and clean up memories on a schedule.
 
 #### Task orchestration & multi-agent
 
@@ -78,6 +78,7 @@ While these tools can be used standalone, truly agentic behavior emerges when th
 | [**spring-ai-agent-utils**](spring-ai-agent-utils/README.md) | Core library - tools, skills, Claude subagents, and full API reference |
 | [**spring-ai-agent-utils-common**](spring-ai-agent-utils-common/README.md) | Shared subagent SPI (SubagentDefinition, SubagentResolver, SubagentExecutor, SubagentType) |
 | [**spring-ai-agent-utils-a2a**](spring-ai-agent-utils-a2a/README.md) | A2A protocol subagent for remote agent orchestration |
+| [**spring-ai-agent-utils-docker-cli**](docs/tools/DockerCliExecBackend.md) | Docker ExecBackend - run agent shell commands inside a sandbox container (in `exec-backends/`) |
 | [**spring-ai-agent-utils-bom**](spring-ai-agent-utils-bom/pom.xml) | Bill of Materials for consistent version management across all modules |
 | [**Examples**](#examples) | Working demos showcasing different use cases |
 
@@ -94,7 +95,7 @@ Use the BOM to manage versions consistently across all modules:
         <dependency>
             <groupId>org.springaicommunity</groupId>
             <artifactId>spring-ai-agent-utils-bom</artifactId>
-            <version>0.9.0</version>
+            <version>0.12.0</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
@@ -115,7 +116,7 @@ Or add the core library directly:
 <dependency>
     <groupId>org.springaicommunity</groupId>
     <artifactId>spring-ai-agent-utils</artifactId>
-    <version>0.9.0</version>
+    <version>0.12.0</version>
 </dependency>
 ```
 
@@ -208,7 +209,7 @@ This project reimplements key Claude Code features based on:
 
 - Java 17+
 - Spring Boot 3.x / 4.x
-- Spring AI 2.0.0-RC1 or later
+- Spring AI 2.0.0 or later
 - Maven 3.6+
 
 ## Building
@@ -234,7 +235,7 @@ mvn spring-boot:run
 | [ask-user-question-demo](examples/ask-user-question-demo) | Interactive agent-user communication with `AskUserQuestionTool` |
 | [memory/memory-tools-demo](examples/memory/memory-tools-demo) | Long-term memory across conversations using dedicated, sandboxed `AutoMemoryTools` (manual setup) |
 | [memory/memory-filesystem-tools-demo](examples/memory/memory-filesystem-tools-demo) | Long-term memory using general-purpose `FileSystemTools` — no dedicated memory tooling required |
-| [memory/memory-tools-advisor-demo](examples/memory/memory-tools-advisor-demo) | Long-term memory via `AutoAutoMemoryToolsAdvisor` — advisor-based setup with consolidation trigger |
+| [memory/memory-tools-advisor-demo](examples/memory/memory-tools-advisor-demo) | Long-term memory via `AutoMemoryToolsAdvisor` — advisor-based setup with consolidation trigger |
 
 See [examples/README.md](examples/README.md) for setup and usage details.
 

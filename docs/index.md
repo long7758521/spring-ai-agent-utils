@@ -27,7 +27,8 @@ spring-ai-agent-utils/
     └── memory/
         ├── memory-tools-demo/           # Long-term memory with AutoMemoryTools (manual setup)
         ├── memory-filesystem-tools-demo/# Long-term memory with general FileSystemTools
-        └── memory-tools-advisor-demo/   # Long-term memory via AutoAutoMemoryToolsAdvisor
+        ├── memory-tools-advisor-demo/   # Long-term memory via AutoAutoMemoryToolsAdvisor
+        └── memory-tools-dream-demo/     # Out-of-band consolidation via AutoDreamAdvisor/AutoDreamService
 ```
 
 ## Quick Start
@@ -42,7 +43,7 @@ Use the BOM to manage versions consistently across all modules:
         <dependency>
             <groupId>org.springaicommunity</groupId>
             <artifactId>spring-ai-agent-utils-bom</artifactId>
-            <version>0.9.0</version>
+            <version>0.12.0</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
@@ -63,14 +64,14 @@ Or add the core library directly:
 <dependency>
     <groupId>org.springaicommunity</groupId>
     <artifactId>spring-ai-agent-utils</artifactId>
-    <version>0.9.0</version>
+    <version>0.12.0</version>
 </dependency>
 ```
 
 _Check the latest version:_ [![](https://img.shields.io/maven-central/v/org.springaicommunity/spring-ai-agent-utils.svg?label=Maven%20Central)](https://central.sonatype.com/artifact/org.springaicommunity/spring-ai-agent-utils)
 
 !!! note
-    You need Spring AI version `2.0.0-RC1` or later.
+    You need Spring AI version `2.0.0` or later.
 
 **2. Configure your agent:**
 
@@ -145,7 +146,7 @@ public class Application {
 
 - Java 17+
 - Spring Boot 3.x / 4.x
-- Spring AI 2.0.0-RC1 or later
+- Spring AI 2.0.0 or later
 - Maven 3.6+
 
 ## Building
@@ -172,6 +173,7 @@ mvn spring-boot:run
 | `memory/memory-tools-demo` | Long-term memory across conversations using dedicated, sandboxed `AutoMemoryTools` (manual setup) |
 | `memory/memory-filesystem-tools-demo` | Long-term memory using general-purpose `FileSystemTools` — no dedicated memory tooling required |
 | `memory/memory-tools-advisor-demo` | Long-term memory via `AutoAutoMemoryToolsAdvisor` — advisor-based setup with consolidation trigger |
+| `memory/memory-tools-dream-demo` | Out-of-band memory consolidation via `AutoDreamAdvisor`/`AutoDreamService` — automatic and on-demand dream cycles, with optional cross-session recall |
 
 ## License
 

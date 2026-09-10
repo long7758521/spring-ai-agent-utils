@@ -24,12 +24,14 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
 
+import org.springaicommunity.agent.common.workspace.Workspace;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
+import org.springframework.util.Assert;
 
 /**
- * Lists directory contents with optional depth and result limit. Skips common
- * noise directories (.git, node_modules, target, build, etc.).
+ * Lists directory contents with optional depth and result limit. Skips common noise
+ * directories (.git, node_modules, target, build, etc.).
  */
 public class ListDirectoryTool {
 
@@ -38,8 +40,17 @@ public class ListDirectoryTool {
 
 	private final Path workingDirectory;
 
+	private final AllowedDirectories allowedDirectories;
+
 	protected ListDirectoryTool(Path workingDirectory) {
-		this.workingDirectory = workingDirectory;
+		this(workingDirectory, List.of());
+	}
+
+	protected ListDirectoryTool(Path workingDirectory, List<Path> allowedDirectories) {
+		// Operator-supplied config: normalize so the model-input '..' defense in the
+		// confinement check does not reject the tool's own working directory.
+		this.workingDirectory = (workingDirectory != null) ? workingDirectory.toAbsolutePath().normalize() : null;
+		this.allowedDirectories = new AllowedDirectories(allowedDirectories);
 	}
 
 	// @formatter:off
@@ -68,6 +79,12 @@ public class ListDirectoryTool {
 		}
 		else {
 			targetDir = Paths.get(System.getProperty("user.dir"));
+		}
+
+		// Confinement check shared with FileSystemTools (see AllowedDirectories)
+		String accessError = this.allowedDirectories.validate(targetDir.toString());
+		if (accessError != null) {
+			return accessError;
 		}
 
 		if (!Files.exists(targetDir)) {
@@ -102,7 +119,9 @@ public class ListDirectoryTool {
 			sb.append(e.isDir() ? "  [dir]  " : "  [file] ").append(rel).append("\n");
 		}
 		if (entries.size() == maxResults) {
-			sb.append("  ... (limit of ").append(maxResults).append(" reached — use a larger limit or narrow the path)");
+			sb.append("  ... (limit of ")
+				.append(maxResults)
+				.append(" reached — use a larger limit or narrow the path)");
 		}
 		return sb.toString().stripTrailing();
 	}
@@ -127,6 +146,8 @@ public class ListDirectoryTool {
 
 		private Path workingDirectory;
 
+		private final AllowedDirectories.Collector allowedDirectories = new AllowedDirectories.Collector();
+
 		private Builder() {
 		}
 
@@ -140,8 +161,57 @@ public class ListDirectoryTool {
 			return this;
 		}
 
+		/**
+		 * Configures this tool for the given workspace — shorthand for
+		 * {@code workingDirectory(workspace.root())} plus
+		 * {@code allowedDirectory(workspace.root())}: listings default to the workspace
+		 * root and are confined to it. A later {@code workingDirectory} call overrides
+		 * the default location while the confinement remains.
+		 * @param workspace the workspace to operate within
+		 * @return this builder
+		 */
+		public Builder workspace(Workspace workspace) {
+			Assert.notNull(workspace, "workspace must not be null");
+			this.workingDirectory = workspace.root();
+			this.allowedDirectories.add(workspace.root());
+			return this;
+		}
+
+		/**
+		 * Adds a directory to the list of allowed paths. When configured, the resolved
+		 * target directory (explicit {@code path} argument or the workingDirectory
+		 * fallback) must fall within the union of allowed directories — same semantics as
+		 * FileSystemTools. Empty (the default) means unrestricted.
+		 * @param allowedDirectory the directory to allow listings within
+		 * @return this builder
+		 */
+		public Builder allowedDirectory(Path allowedDirectory) {
+			this.allowedDirectories.add(allowedDirectory);
+			return this;
+		}
+
+		/**
+		 * Adds a directory to the list of allowed paths.
+		 * @param allowedDirectory the directory path as a string; ignored if {@code null}
+		 * @return this builder
+		 */
+		public Builder allowedDirectory(String allowedDirectory) {
+			this.allowedDirectories.add(allowedDirectory);
+			return this;
+		}
+
+		/**
+		 * Adds multiple directories to the list of allowed paths.
+		 * @param allowedDirectories the directories to allow listings within
+		 * @return this builder
+		 */
+		public Builder allowedDirectories(Path... allowedDirectories) {
+			this.allowedDirectories.addAll(allowedDirectories);
+			return this;
+		}
+
 		public ListDirectoryTool build() {
-			return new ListDirectoryTool(workingDirectory);
+			return new ListDirectoryTool(workingDirectory, this.allowedDirectories.toList());
 		}
 
 	}
